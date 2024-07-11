@@ -5,6 +5,7 @@
 #include <spdlog/sinks/daily_file_sink.h>
 // #include <memory>
 #include <mutex>
+#include <iostream>
 #include <string>
 #include <chrono>
 #include <iomanip> // for std::put_time
@@ -41,7 +42,7 @@ public:
     
     // 设置日志级别
     void setLogLevel(spdlog::level::level_enum level);
-    void initlogger(const std::string& logger_name = "Daily Log", const std::string& log_filename = "../log/log.txt");
+    void initlogger(const std::string& logger_name = "Daily Log", const std::string& log_filename = "/logs/log.txt");
     // 记录带参数的日志，包括时间戳
     template<typename... Args>
     void log(spdlog::level::level_enum level, const char* fmt, const Args&... args) {

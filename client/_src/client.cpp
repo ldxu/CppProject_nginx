@@ -193,9 +193,10 @@ bool Client::Login()
         Logger->log(spdlog::level::info, "用户准备登录！");
         // std::cout << "\x1b[2J";  // 清屏
         // std::cout << "\x1b[H";   // 光标移到左上角
-        std::cout << "请输入你的账户密码:" << std::endl;
         std::string Account, Password;
-   User:std::cin >> Account >> Password;
+
+   User:std::cout << "请输入你的账户密码:" << std::endl;
+        std::cin >> Account >> Password;
 
         if(Account.size()>=_USERNAME_LENGTH_)
             {
@@ -208,38 +209,47 @@ bool Client::Login()
                 goto User;
             }
 
-        //用来发送用的指针
-        char* Sendbuf;
+        //写入用户名和密码信息到结构体中
+        char* loginbuf = (char*)malloc(sizeof(STRUCT_LOGIN));
+        LPSTRUCT_LOGIN login_mem = (STRUCT_LOGIN *)loginbuf;
+        //将包体内容复制到缓冲区，并且手动添加空字符
+        memcpy(login_mem->username, Account.c_str(), Account.size());
+        login_mem->username[Account.size()] = '\0';
+        memcpy(login_mem->password, Password.c_str(), Password.size());
+        login_mem->password[Password.size()] = '\0';
+
         //用来释放的指针
-        char* LoginMsgBuf = static_cast<char*>(std::malloc(sizeof(STRUCT_LOGIN)));
+        char* Sendbuf;
+        //用来发送用的指针
+        char* LoginMsgBuf = static_cast<char*>(std::malloc(sizeof(STRUCT_LOGIN) + sizeof(COMM_PKG_HEADER)));
         if(!LoginMsgBuf)
             {
                 Logger->log(spdlog::level::err, "内存分配失败！程序退出!");
                 exit(-1);
             }
-        Sendbuf = LoginMsgBuf;
-        LPSTRUCT_LOGIN login_mem = (STRUCT_LOGIN *)LoginMsgBuf;
-        std::cin>>login_mem->username;
-        std::cin>>login_mem->password;
-        // 开始封装包头
-        //将包体内容复制到缓冲区，并且手动添加空字符
-        memcpy(login_mem->username, Account.c_str(), Account.size());
-        login_mem->username[Account.size()] = '\0';
-        memcpy(login_mem->password, Password.c_str(), Password.size());
-        login_mem->password[Account.size()] = '\0';
-        unsigned short MsgDataLength = sizeof(STRUCT_LOGIN) + sizeof(COMM_PKG_HEADER);
-        char* PkgBuf = LoginMsgBuf + sizeof(STRUCT_LOGIN);
-        //指向包体的指针
 
-        LPCOMM_PKG_HEADER pkghead = reinterpret_cast<COMM_PKG_HEADER*>(PkgBuf);
+        Sendbuf = LoginMsgBuf;
+        // 整个数据包的大小为包头+登录结构体a
+        unsigned short MsgDataLength = sizeof(STRUCT_LOGIN) + sizeof(COMM_PKG_HEADER);
+        //先写入包头信息
+        LPCOMM_PKG_HEADER pkghead = reinterpret_cast<COMM_PKG_HEADER*>(LoginMsgBuf);
+        
         pkghead->pkgLen = htons(MsgDataLength);
         pkghead->msgCode = htons(_CMD_LOGIN);
         //生成CRC32校验码
         pkghead->crc32  = htonl(Crc32->Get_CRC((unsigned char *)login_mem, sizeof(STRUCT_LOGIN) ));
-        
-        sendData(sockfd, LoginMsgBuf, MsgDataLength);
+        //移动指针位置，开始装填登录消息体
+        LoginMsgBuf += sizeof(COMM_PKG_HEADER);
 
+        memcpy(LoginMsgBuf, loginbuf, sizeof(STRUCT_LOGIN));
+        //指向包体的指针
+
+        
+        sendData(sockfd, Sendbuf, MsgDataLength);
+        free(loginbuf);
         free(Sendbuf);
+
+        system("pause");
         return true;
 
         
