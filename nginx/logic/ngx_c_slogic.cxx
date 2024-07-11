@@ -25,6 +25,7 @@
 #include "ngx_c_slogic.h"  
 #include "ngx_logiccomm.h"  
 #include "ngx_c_lockmutex.h"  
+#include "My_redis.h"
 
 //定义成员函数指针
 typedef bool (CLogicSocket::*handler)(  lpngx_connection_t pConn,      //连接池中连接的指针
@@ -256,21 +257,67 @@ bool CLogicSocket::_HandleLogIn(lpngx_connection_t pConn,LPSTRUC_MSG_HEADER pMsg
     p_RecvInfo->username[sizeof(p_RecvInfo->username)-1]=0;
     p_RecvInfo->password[sizeof(p_RecvInfo->password)-1]=0;
     ngx_log_stderr(0, "收到来自客户端的消息 用户名 %s 密码 %s ", p_RecvInfo->username, p_RecvInfo->password );    
+    //登录验证处理
+    //------------------------------------------------------------------------------------------------------------------
+    MyRedis* redis = MyRedis::GetInstance();
+    std::string LoginVerify = redis->GetStringCommand( "Account:" + std::string(p_RecvInfo->username) );
+    std::string ReplyMessage;
+    unsigned  short ReplyMessageCode;
+    //判断读取的数据如果成功读取则是密码，没有这个账户则是nil，执行错误则是failed
+    if(strcmp(LoginVerify.c_str(), "nil") == 0)
+        {
+            ReplyMessageCode = 1;
+             ReplyMessage = "账户或密码错误";
+        }
+    else if(strcmp(LoginVerify.c_str(), "failed") == 0)
+        {
+            ReplyMessageCode = 2;
+            ReplyMessage = "服务端异常，请稍后再试";
+        }
+    else
+        {
+            ReplyMessageCode = 3;
+            ReplyMessage = "登录成功";
+        }
 
-	LPCOMM_PKG_HEADER pPkgHeader;	
-	CMemory  *p_memory = CMemory::GetInstance();
+    LOGIN_REPLY ReplyStruct;
+    CMemory  *p_memory = CMemory::GetInstance();
 	CCRC32   *p_crc32 = CCRC32::GetInstance();
 
-    int iSendLen = sizeof(STRUCT_LOGIN);  
-    char *p_sendbuf = (char *)p_memory->AllocMemory(m_iLenMsgHeader+m_iLenPkgHeader+iSendLen,false);    
-    memcpy(p_sendbuf,pMsgHeader,m_iLenMsgHeader);    
+    int iSendLen = sizeof(LOGIN_REPLY);
+    char* p_sendbuf = (char*)p_memory->AllocMemory(m_iLenMsgHeader + m_iLenPkgHeader + iSendLen);
+    //先复制消息头信息
+    memcpy(p_sendbuf, pMsgHeader, m_iLenMsgHeader);
+    //处理包头信息
+    LPCOMM_PKG_HEADER pPkgHeader;	
     pPkgHeader = (LPCOMM_PKG_HEADER)(p_sendbuf+m_iLenMsgHeader);
     pPkgHeader->msgCode = _CMD_LOGIN;
     pPkgHeader->msgCode = htons(pPkgHeader->msgCode);
-    pPkgHeader->pkgLen  = htons(m_iLenPkgHeader + iSendLen);    
-    LPSTRUCT_LOGIN p_sendInfo = (LPSTRUCT_LOGIN)(p_sendbuf+m_iLenMsgHeader+m_iLenPkgHeader);
-    pPkgHeader->crc32   = p_crc32->Get_CRC((unsigned char *)p_sendInfo,iSendLen);
-    pPkgHeader->crc32   = htonl(pPkgHeader->crc32);		   
+    pPkgHeader->pkgLen  = htons(m_iLenPkgHeader + iSendLen);  
+
+    ReplyStruct = (LLOGIN_REPLY)(p_sendbuf+m_iLenMsgHeader+m_iLenPkgHeader);
+    ReplyStruct->ReplyMessage = ReplyMessage.c_str();
+    ReplySTruct->ReplyMessage[ReplyMessage.size()] = '\0';
+    ReplyStruct->ReplyCode = htons(ReplyMessageCode);
+    
+    pPkgHeader->crc32   = p_crc32->Get_CRC((unsigned char *)ReplyStruct,iSendLen);
+    pPkgHeader->crc32   = htonl(pPkgHeader->crc32);		
+    //------------------------------------------------------------------------------------------------------------------
+
+	// LPCOMM_PKG_HEADER pPkgHeader;	
+	// CMemory  *p_memory = CMemory::GetInstance();
+	// CCRC32   *p_crc32 = CCRC32::GetInstance();
+
+    // int iSendLen = sizeof(STRUCT_LOGIN);  
+    // char *p_sendbuf = (char *)p_memory->AllocMemory(m_iLenMsgHeader+m_iLenPkgHeader+iSendLen,false);    
+    // memcpy(p_sendbuf,pMsgHeader,m_iLenMsgHeader);    
+    // pPkgHeader = (LPCOMM_PKG_HEADER)(p_sendbuf+m_iLenMsgHeader);
+    // pPkgHeader->msgCode = _CMD_LOGIN;
+    // pPkgHeader->msgCode = htons(pPkgHeader->msgCode);
+    // pPkgHeader->pkgLen  = htons(m_iLenPkgHeader + iSendLen);    
+    // LPSTRUCT_LOGIN p_sendInfo = (LPSTRUCT_LOGIN)(p_sendbuf+m_iLenMsgHeader+m_iLenPkgHeader);
+    // pPkgHeader->crc32   = p_crc32->Get_CRC((unsigned char *)p_sendInfo,iSendLen);
+    // pPkgHeader->crc32   = htonl(pPkgHeader->crc32);		   
     //ngx_log_stderr(0,"成功收到了登录并返回结果！");
     msgSend(p_sendbuf);
     return true;
