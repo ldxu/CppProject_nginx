@@ -29,6 +29,12 @@ typedef struct _STRUCT_LOGIN
 
 }STRUCT_LOGIN, *LPSTRUCT_LOGIN;
 
+//发送给客户端的登录验证消息
+typedef struct _LOGIN_REPLY_
+	{
+		unsigned short 	ReplyCode;
+		char			ReplyMessage[56];
+	}LOGIN_REPLY,*LLOGIN_REPLY;
 
 #pragma pack() //取消指定对齐，恢复缺省对齐
 
