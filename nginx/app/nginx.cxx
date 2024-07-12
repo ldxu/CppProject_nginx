@@ -16,7 +16,6 @@
 #include "ngx_c_threadpool.h"  //和多线程有关
 #include "ngx_c_crc32.h"       //和crc32校验算法有关 
 #include "ngx_c_slogic.h"      //和socket通讯相关
-
 //本文件用的函数声明
 static void freeresource();
 
@@ -73,7 +72,7 @@ int main(int argc, char *const *argv)
     ngx_reap = 0;                     //标记子进程没有发生变化
    
     CConfig *p_config = CConfig::GetInstance(); //单例类
-    if(p_config->Load("nginx.conf") == false) //把配置文件内容载入到内存            
+    if(p_config->Load("../nginx.conf") == false) //把配置文件内容载入到内存            
     {   
         ngx_log_init();    //初始化日志
         ngx_log_stderr(0,"配置文件[%s]载入失败，退出!","nginx.conf");
