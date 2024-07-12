@@ -45,9 +45,9 @@ ${SRC_FILES6}
 )
 
 
-add_executable(Server ${SOURCES})
+add_executable(nginx_Server ${SOURCES})
 
-target_link_libraries(Server
+target_link_libraries(nginx_Server
     ${HIREDIS_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     )
