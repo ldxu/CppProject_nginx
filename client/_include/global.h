@@ -62,7 +62,13 @@ typedef struct _COMM_PKG_HEADER
 	int            crc32;     //CRC32效验--4字节，为了防止收发数据中出现收到内容和发送内容不一致的情况，引入这个字段做一个基本的校验用	
 }COMM_PKG_HEADER,*LPCOMM_PKG_HEADER;
 
-
+//发送给客户端的登录验证消息
+typedef struct _LOGIN_REPLY_
+	{
+		unsigned short 	ReplyCode;
+		char			ReplyMessage[56];
+	}LOGIN_REPLY,*LLOGIN_REPLY;
+	
 #pragma pack() //取消指定对齐，恢复缺省对齐
 
 #endif
