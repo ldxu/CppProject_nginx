@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <termios.h>
 #include <fcntl.h>
-#include <filesystem>
 #include "global.h"
 #include "log.h"
 #include "crc32.h"

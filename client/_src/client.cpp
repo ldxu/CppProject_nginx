@@ -19,9 +19,25 @@ Client::Client(const string& configName)
 
         string logname = Cfg->getString("LogName", "DailyLog");
         string logfilename = Cfg->getString("LogFileName", "/logs/log.txt");
-        std::string log_directory = std::filesystem::current_path().parent_path().string();
-
-        std::cout << log_directory << std::endl;
+        std::string log_directory;
+        char* cwd = get_current_dir_name();
+        if(cwd != NULL)
+            {
+                char *last_slash = strrchr(cwd, '/');
+                if (last_slash != NULL) {
+                    *last_slash = '\0';  // 截断到最后一个斜杠的位置
+                } else {
+                    std::cout << "没有找到父目录，直接使用当前目录" << std::endl;
+                    logfilename = "";
+                }
+                log_directory = std::string(cwd);
+                free(cwd);  // 释放由 get_current_dir_name 分配的内存
+            }
+        else
+            {
+                perror("get_current_dir_name() error");
+                logfilename = "";
+            }
 
         Logger = DailyLogger::getInstance();
         Logger->initlogger(logname, log_directory + logfilename);
