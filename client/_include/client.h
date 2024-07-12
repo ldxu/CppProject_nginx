@@ -41,6 +41,7 @@ class Client
             void setRawMode(bool enable);
             void setNonBlocking(int sockfd);
             void sendData(int sockfd, const char* buff, size_t len);
+            void recvData(int sockfd, char* buff, size_t len);
         public:
             Client(const string& configName = "../config.cfg");
             ~Client();

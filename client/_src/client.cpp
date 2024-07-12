@@ -1,5 +1,7 @@
 #include "client.h"
 
+
+
 Client::Client(const string& configName)
     {
         std::cout << GREEN << "--------------------------------------------------------------" << RESET << std::endl;
@@ -184,8 +186,45 @@ void Client::sendData(int sockfd, const char* buff, size_t len)
                 }
             }
             totalSent += sent;
-    } 
+            } 
     }
+
+void Client::recvData(int sockfd, char* buff, size_t len)
+{
+    size_t totalReceived = 0;
+    std::cout << "准备接收消息" << std::endl;
+    Logger->log(spdlog::level::info, "准备接收消息");
+
+    while (totalReceived < len) {
+        ssize_t received = recv(sockfd, buff + totalReceived, len - totalReceived, 0);
+        if (received == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // 如果没有数据可读，继续尝试
+                continue;
+            } else {
+                Logger->log(spdlog::level::err, "Recv failed: {}", strerror(errno));
+                std::cerr << "Recv failed: " << strerror(errno) << "\n";
+                exit(EXIT_FAILURE);
+            }
+        } else if (received == 0) {
+            // 如果连接关闭，退出循环
+            Logger->log(spdlog::level::info, "Connection closed by peer");
+            std::cerr << "Connection closed by peer\n";
+            break;
+        }
+
+        totalReceived += received;
+        Logger->log(spdlog::level::info, "Received {} bytes", received);
+    }
+
+    Logger->log(spdlog::level::info, "接收完成，共接收 {} 字节数据", totalReceived);
+    std::cout << "接收完成，共接收 " << totalReceived << " 字节数据\n";
+    LOGIN_REPLY* reply = (LLOGIN_REPLY)(buff + sizeof(COMM_PKG_HEADER));
+    unsigned short ReplyCode = ntohs(reply->ReplyCode);
+    std::string ReplyMessage = std::string(reply->ReplyMessage);
+    Logger->log(spdlog::level::info, "接收到来自服务器端的认证消息, 回复代码为 {}, 回复消息为 {}", ReplyCode,ReplyMessage);
+    Logger->log(spdlog::level::info, "收到数据但是没解析出来");
+}
 
 
 bool Client::Login()
@@ -248,8 +287,16 @@ bool Client::Login()
         sendData(sockfd, Sendbuf, MsgDataLength);
         free(loginbuf);
         free(Sendbuf);
-
-        system("pause");
+        int BuffSize = sizeof(COMM_PKG_HEADER) + sizeof(LOGIN_REPLY) + 100;
+        int RecvSize = 0;
+        char* RecvBuf = (char*)malloc(BuffSize);
+        recvData(sockfd, RecvBuf, BuffSize - 100);
+        std::cout << "pause" << std::endl;
+        LOGIN_REPLY* reply = (LLOGIN_REPLY)(RecvBuf + sizeof(COMM_PKG_HEADER));
+        unsigned short ReplyCode = ntohs(reply->ReplyCode);
+        std::string ReplyMessage = std::string(reply->ReplyMessage);
+        Logger->log(spdlog::level::info, "接收到来自服务器端的认证消息, 回复代码为 {}, 回复消息为 {}", ReplyCode,ReplyMessage);
+        free(RecvBuf);
         return true;
 
         
