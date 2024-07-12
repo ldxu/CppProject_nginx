@@ -280,12 +280,12 @@ bool CLogicSocket::_HandleLogIn(lpngx_connection_t pConn,LPSTRUC_MSG_HEADER pMsg
             ReplyMessage = "登录成功";
         }
 
-    LOGIN_REPLY ReplyStruct;
+    LOGIN_REPLY* ReplyStruct;
     CMemory  *p_memory = CMemory::GetInstance();
 	CCRC32   *p_crc32 = CCRC32::GetInstance();
 
     int iSendLen = sizeof(LOGIN_REPLY);
-    char* p_sendbuf = (char*)p_memory->AllocMemory(m_iLenMsgHeader + m_iLenPkgHeader + iSendLen);
+    char* p_sendbuf = (char*)p_memory->AllocMemory(m_iLenMsgHeader + m_iLenPkgHeader + iSendLen, false);
     //先复制消息头信息
     memcpy(p_sendbuf, pMsgHeader, m_iLenMsgHeader);
     //处理包头信息
@@ -296,8 +296,9 @@ bool CLogicSocket::_HandleLogIn(lpngx_connection_t pConn,LPSTRUC_MSG_HEADER pMsg
     pPkgHeader->pkgLen  = htons(m_iLenPkgHeader + iSendLen);  
 
     ReplyStruct = (LLOGIN_REPLY)(p_sendbuf+m_iLenMsgHeader+m_iLenPkgHeader);
-    ReplyStruct->ReplyMessage = ReplyMessage.c_str();
-    ReplySTruct->ReplyMessage[ReplyMessage.size()] = '\0';
+
+    memcpy(ReplyStruct->ReplyMessage, ReplyMessage.c_str(), ReplyMessage.size());
+    ReplyStruct->ReplyMessage[ReplyMessage.size()] = '\0';
     ReplyStruct->ReplyCode = htons(ReplyMessageCode);
     
     pPkgHeader->crc32   = p_crc32->Get_CRC((unsigned char *)ReplyStruct,iSendLen);
