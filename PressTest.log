@@ -1,0 +1,32 @@
+----------------------------------------------------------------------------------
+Stress test completed
+Total requests: 400000
+Successful responses: 400000
+Failed responses: 0
+Average response time: 186 microseconds
+Maximum response time: 4574 microseconds
+Minimum response time: 33 microseconds
+----------------------------------------------------------------------------------
+Stress test completed
+Total requests: 300000
+Successful responses: 300000
+Failed responses: 0
+Average response time: 177 microseconds
+Maximum response time: 2704 microseconds
+Minimum response time: 40 microseconds
+----------------------------------------------------------------------------------
+Stress test completed
+Total requests: 200000
+Successful responses: 200000
+Failed responses: 0
+Average response time: 179 microseconds
+Maximum response time: 2990 microseconds
+Minimum response time: 39 microseconds
+----------------------------------------------------------------------------------
+Stress test completed
+Total requests: 100000
+Successful responses: 100000
+Failed responses: 0
+Average response time: 182 microseconds
+Maximum response time: 2217 microseconds
+Minimum response time: 40 microseconds
