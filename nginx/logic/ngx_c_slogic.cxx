@@ -107,7 +107,6 @@ void CLogicSocket::threadRecvProcFunc(char *pMsgBuf)
             //ngx_log_stderr(0,"CLogicSocket::threadRecvProcFunc()中CRC正确[服务器:%d/客户端:%d]，不错!",calccrc,pPkgHeader->crc32);
         }        
 	}
-    ngx_log_stderr(0, "收到来自客户端的消息");
     unsigned short imsgCode = ntohs(pPkgHeader->msgCode); //消息代码拿出来
     lpngx_connection_t p_Conn = pMsgHeader->pConn;        //消息头中藏着连接池中连接的指针
 
@@ -115,19 +114,16 @@ void CLogicSocket::threadRecvProcFunc(char *pMsgBuf)
     {
         return; //丢弃不理这种包了【客户端断开了】
     }
-    ngx_log_stderr(0, "check1");
 	if(imsgCode >= AUTH_TOTAL_COMMANDS) //无符号数不可能<0
     {
         ngx_log_stderr(0,"CLogicSocket::threadRecvProcFunc()中imsgCode=%d消息码不对!",imsgCode); //这种有恶意倾向或者错误倾向的包，希望打印出来看看是谁干的
         return; //丢弃不理这种包【恶意包或者错误包】
     }
-    ngx_log_stderr(0, "check2");
     if(statusHandler[imsgCode] == NULL) //这种用imsgCode的方式可以使查找要执行的成员函数效率特别高
     {
         ngx_log_stderr(0,"CLogicSocket::threadRecvProcFunc()中imsgCode=%d消息码找不到对应的处理函数!",imsgCode); //这种有恶意倾向或者错误倾向的包，希望打印出来看看是谁干的
         return;  //没有相关的处理函数
     }
-    ngx_log_stderr(0, "check3");
     (this->*statusHandler[imsgCode])(p_Conn,pMsgHeader,(char *)pPkgBody,pkglen-m_iLenPkgHeader);
     return;	
 }
@@ -256,7 +252,6 @@ bool CLogicSocket::_HandleLogIn(lpngx_connection_t pConn,LPSTRUC_MSG_HEADER pMsg
     LPSTRUCT_LOGIN p_RecvInfo = (LPSTRUCT_LOGIN)pPkgBody;     
     p_RecvInfo->username[sizeof(p_RecvInfo->username)-1]=0;
     p_RecvInfo->password[sizeof(p_RecvInfo->password)-1]=0;
-    ngx_log_stderr(0, "收到来自客户端的消息 用户名 %s 密码 %s ", p_RecvInfo->username, p_RecvInfo->password );    
     //登录验证处理
     //------------------------------------------------------------------------------------------------------------------
     MyRedis* redis = MyRedis::GetInstance();
@@ -331,7 +326,7 @@ bool CLogicSocket::_HandlePing(lpngx_connection_t pConn,LPSTRUC_MSG_HEADER pMsgH
 
     CLock lock(&pConn->logicPorcMutex); //凡是和本用户有关的访问都考虑用互斥，以免该用户同时发送过来两个命令达到各种作弊目的
     pConn->lastPingTime = time(NULL);   //更新该变量
-
+    
     //服务器也发送 一个只有包头的数据包给客户端，作为返回的数据
     SendNoBodyPkgToClient(pMsgHeader,_CMD_PING);
 
